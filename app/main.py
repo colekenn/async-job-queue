@@ -1,9 +1,16 @@
+import os
+import redis
 from fastapi import FastAPI, HTTPException
 from .database import engine, SessionLocal, Base
 from . import models, schemas
 
 
 Base.metadata.create_all(bind=engine)
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+r = redis.from_url(REDIS_URL, decode_responses=True)
+
+QUEUE_NAME = "job_queue"
 
 app = FastAPI(title="Async Job Queue Demo")
 
@@ -19,7 +26,9 @@ def create_job(job_in: schemas.JobCreate):
         db.add(job)
         db.commit()
         db.refresh(job)
-        return job
+
+    r.rpush(QUEUE_NAME, job.id)
+    return job
 
 
 @app.get("/jobs/{job_id}", response_model=schemas.JobOut)
