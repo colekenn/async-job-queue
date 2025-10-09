@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, JSON
 from sqlalchemy import func
 from .database import Base
 
@@ -10,5 +10,6 @@ class Job(Base):
     job_type = Column(String(100), index=True, nullable=False)
     payload = Column(JSON, nullable=True)
     status = Column(String(50), nullable=False, default="pending", index=True)
+    idempotency_key = Column(String(200), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), server_onupdate=func.now())

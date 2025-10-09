@@ -18,10 +18,16 @@ app = FastAPI(title="Async Job Queue Demo")
 @app.post("/jobs", response_model=schemas.JobOut)
 def create_job(job_in: schemas.JobCreate):
     with SessionLocal() as db:
+        if job_in.idempotency_key:
+            existing = db.query(models.Job).filter(models.Job.idempotency_key == job_in.idempotency_key).first()
+            if existing:
+                return existing
+
         job = models.Job(
             job_type=job_in.job_type,
             payload=job_in.payload,
             status="pending",
+            idempotency_key=job_in.idempotency_key,
         )
         db.add(job)
         db.commit()
