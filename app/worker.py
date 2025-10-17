@@ -24,14 +24,19 @@ def process_job(job_id: int, db):
     if job.status == "succeeded":
         return
 
-    print(f"[worker] processing job {job.id} type={job.job_type}")
+    print(f"[worker] processing job {job.id} type={job.job_type} attempts={job.attempts}")
     job.status = "processing"
     db.commit()
 
     simulated = job.payload.get("simulate_seconds", 1) if job.payload else 1
     time.sleep(float(simulated))
 
+    result = {"echo": job.payload, "processed_at": time.time()}
+
+    job.result = result
     job.status = "succeeded"
+    job.error = None
+    job.attempts = job.attempts + 1
     db.commit()
     print(f"[worker] job {job.id} succeeded")
 
