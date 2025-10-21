@@ -27,35 +27,53 @@ def process_job(job_id: int, db):
     print(f"[worker] processing job {job.id} type={job.job_type} attempts={job.attempts}")
     job.status = "processing"
     db.commit()
+    try:
+        simulated = job.payload.get("simulate_seconds", 1) if job.payload else 1
+        time.sleep(float(simulated))
 
-    simulated = job.payload.get("simulate_seconds", 1) if job.payload else 1
-    time.sleep(float(simulated))
+        result = {"echo": job.payload, "processed_at": time.time()}
 
-    result = {"echo": job.payload, "processed_at": time.time()}
-
-    job.result = result
-    job.status = "succeeded"
-    job.error = None
-    job.attempts = job.attempts + 1
-    db.commit()
-    print(f"[worker] job {job.id} succeeded")
+        job.result = result
+        job.status = "succeeded"
+        job.error = None
+        job.attempts = job.attempts + 1
+        db.commit()
+        print(f"[worker] job {job.id} succeeded")
+    except Exception as exc:
+        job.attempts = job.attempts + 1
+        job.error = str(exc)
+        if job.attempts < job.max_attempts:
+            backoff = min(2 ** job.attempts, 60)
+            job.status = "pending"
+            db.commit()
+            print(f"[worker] job {job.id} failed, retrying after {backoff}s (attempt {job.attempts})")
+            time.sleep(backoff)
+            r.rpush(QUEUE_NAME, job.id)
+        else:
+            job.status = "failed"
+            db.commit()
+            print(f"[worker] job {job.id} failed permanently after {job.attempts} attempts")
 
 
 def main_loop():
     print("[worker] starting main loop, listening for jobs")
     while True:
-        item = r.blpop(QUEUE_NAME, timeout=5)
-        if not item:
-            continue
-        _, job_id_raw = item
         try:
-            job_id = int(job_id_raw)
-        except (ValueError, TypeError):
-            print("[worker] invalid job id in queue:", job_id_raw)
-            continue
+            item = r.blpop(QUEUE_NAME, timeout=5)
+            if not item:
+                continue
+            _, job_id_raw = item
+            try:
+                job_id = int(job_id_raw)
+            except (ValueError, TypeError):
+                print("[worker] invalid job id in queue:", job_id_raw)
+                continue
 
-        with SessionLocal() as db:
-            process_job(job_id, db)
+            with SessionLocal() as db:
+                process_job(job_id, db)
+        except Exception as exc:
+            print("[worker] exception in loop:", exc)
+            time.sleep(1)
 
 
 if __name__ == "__main__":
