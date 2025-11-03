@@ -27,5 +27,16 @@ services:
     ports:
       - "8000:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+  worker:
+    build: .
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/jobsdb
+      REDIS_URL: redis://redis:6379/0
+      API_KEY: my-demo-key
+      RATE_LIMIT_PER_MIN: "30"
+    command: ["python", "-m", "app.worker"]
 volumes:
   pgdata:
