@@ -67,6 +67,74 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 python -m app.worker
 ```
 
+## API Usage Examples
+
+### Using PowerShell (Windows):
+
+**Create a job:**
+```powershell
+$body = @{
+    job_type = "process_data"
+    payload = @{
+        data = "example"
+        simulate_seconds = 2
+    }
+    idempotency_key = "unique-key-123"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8000/jobs" `
+    -Method Post `
+    -Headers @{
+        "x-api-key" = "my-demo-key"
+        "Content-Type" = "application/json"
+    } `
+    -Body $body
+```
+
+**Get a job by ID:**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/jobs/1"
+```
+
+**List all jobs:**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/jobs"
+```
+
+**List jobs by status:**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/jobs?status=pending&limit=10"
+```
+
+### Using curl (Linux/Mac):
+
+**Create a job:**
+```bash
+curl -X POST "http://localhost:8000/jobs" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: my-demo-key" \
+  -d '{
+    "job_type": "process_data",
+    "payload": {"data": "example", "simulate_seconds": 2},
+    "idempotency_key": "unique-key-123"
+  }'
+```
+
+**Get a job by ID:**
+```bash
+curl "http://localhost:8000/jobs/1"
+```
+
+**List all jobs:**
+```bash
+curl "http://localhost:8000/jobs"
+```
+
+**List jobs by status:**
+```bash
+curl "http://localhost:8000/jobs?status=pending&limit=10"
+```
+
 ## Services
 
 - **Web API** (port 8000): FastAPI server for creating and querying jobs
