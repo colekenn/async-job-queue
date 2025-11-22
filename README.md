@@ -106,6 +106,11 @@ Invoke-RestMethod -Uri "http://localhost:8000/jobs"
 Invoke-RestMethod -Uri "http://localhost:8000/jobs?status=pending&limit=10"
 ```
 
+**View worker logs (to see jobs being processed):**
+```powershell
+docker compose logs worker -f
+```
+
 ### Using curl (Linux/Mac):
 
 **Create a job:**
@@ -141,3 +146,36 @@ curl "http://localhost:8000/jobs?status=pending&limit=10"
 - **Worker**: Background process that processes jobs from the Redis queue
 - **PostgreSQL**: Database for storing job records
 - **Redis**: Message queue for job processing
+
+## Quick Test Guide
+
+1. **Start the services:**
+   ```powershell
+   docker compose up --build
+   ```
+
+2. **Open the API docs in your browser:**
+   - Go to: http://localhost:8000/docs
+   - This gives you an interactive UI to test all endpoints
+
+3. **Or test via PowerShell:**
+   ```powershell
+   # Create a job
+   $body = @{job_type='test'; payload=@{simulate_seconds=1}} | ConvertTo-Json
+   Invoke-RestMethod -Uri 'http://localhost:8000/jobs' -Method Post -Headers @{'x-api-key'='my-demo-key'; 'Content-Type'='application/json'} -Body $body
+   
+   # Check job status (replace 1 with your job ID)
+   Invoke-RestMethod -Uri 'http://localhost:8000/jobs/1'
+   
+   # Watch worker process jobs
+   docker compose logs worker -f
+   ```
+
+## Technologies Used
+
+- **FastAPI**: Modern Python web framework for building APIs
+- **PostgreSQL**: Relational database for job persistence
+- **Redis**: In-memory data store for job queue and rate limiting
+- **SQLAlchemy**: Python ORM for database operations
+- **Docker & Docker Compose**: Containerization and orchestration
+- **Pydantic**: Data validation using Python type annotations
