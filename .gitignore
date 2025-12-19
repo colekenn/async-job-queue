@@ -8,6 +8,8 @@ env/
 venv/
 ENV/
 .venv
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Database
 *.db
@@ -16,3 +18,27 @@ ENV/
 
 # Environment variables
 .env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Logs
+*.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
